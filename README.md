@@ -118,10 +118,10 @@ Access Sahih collections with verified text representations.
 #### 📡 Endpoints Table
 | Method | Endpoint | Parameters | Returns | Live Test |
 | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/fikir/hadith/v1/collections` | None | Supported Hadith collections list. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/hadith/collections/tr) |
-| `GET` | `/api/fikir/hadith/v1/{collection}/{no}` | `collection` (slug), `no` (index) | Full content of specific Hadith entry. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/hadith/collections/tr) |
+| `GET` | `/api/hadith/collections/{lang}` | `lang` (ISO-2 code) | Supported Hadith collections list. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/hadith/collections/tr) |
+| `GET` | `/api/hadith/{lang}/{collection}/{no}` | `lang`, `collection`, `no` | Full content of specific Hadith entry. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/hadith/tr/buhari/1) |
 
-#### 📝 Sample API Response (`GET /api/fikir/hadith/v1/buhari/1`)
+#### 📝 Sample API Response (`GET /api/hadith/tr/buhari/1`)
 ```json
 {
   "status": "success",
@@ -146,11 +146,11 @@ Provides highly accurate prayer schedule calculations with timezone handling.
 #### 📡 Endpoints Table
 | Method | Endpoint | Parameters | Returns | Live Test |
 | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/fikir/prayer/v1/{city}` | `city` (string) | Today's calculated prayer times. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/fikir/prayer/v1/istanbul) |
-| `GET` | `/api/fikir/prayer/v1/methods` | None | Calculation methods used globally. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/fikir/prayer/v1/methods) |
-| `GET` | `/api/fikir/calendar/v1/hijri` | None | Live Hijri date and holy nights. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/calendar/v1/hijri) |
+| `GET` | `/api/fikir/prayer/turkey` | `city` (query param) | Today's calculated prayer times. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/fikir/prayer/turkey?city=istanbul) |
+| `GET` | `/api/fikir/prayer/methods` | None | Calculation methods used globally. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/fikir/prayer/methods) |
+| `GET` | `/api/fikir/calendar/today` | None | Live Hijri date and holy nights. | [Test Endpoint](https://api.fikirogrencitoplulugu.org.tr/api/fikir/calendar/today) |
 
-#### 📝 Sample API Response (`GET /api/fikir/prayer/v1/istanbul`)
+#### 📝 Sample API Response (`GET /api/fikir/prayer/turkey?city=istanbul`)
 ```json
 {
   "status": "success",
@@ -244,8 +244,8 @@ FİKİR Islamic API v2.2.0, web, mobil ve masaüstü yazılımları için optimi
 
 | Metot | Uç Nokta | Parametreler | Dönen Değer | Canlı Test Linki |
 | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/fikir/hadith/v1/collections` | Yok | Kayıtlı 14+ hadis kaynağının listesi. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/hadith/collections/tr) |
-| `GET` | `/api/fikir/hadith/v1/{collection}/{no}` | `collection`, `no` | Belirtilen indeksteki hadisin içeriği. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/hadith/collections/tr) |
+| `GET` | `/api/hadith/collections/{lang}` | `lang` (Örn: tr) | Kayıtlı 14+ hadis kaynağının listesi. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/hadith/collections/tr) |
+| `GET` | `/api/hadith/{lang}/{collection}/{no}` | `lang`, `collection`, `no` | Belirtilen indeksteki hadisin içeriği. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/hadith/tr/buhari/1) |
 
 ---
 
@@ -253,8 +253,8 @@ FİKİR Islamic API v2.2.0, web, mobil ve masaüstü yazılımları için optimi
 
 | Metot | Uç Nokta | Parametreler | Dönen Değer | Canlı Test Linki |
 | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/fikir/prayer/v1/{city}` | `city` (Şehir adı) | Günlük namaz vakitleri. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/fikir/prayer/v1/istanbul) |
-| `GET` | `/api/calendar/v1/hijri` | Yok | Anlık hicri tarih ve dini günler. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/calendar/v1/hijri) |
+| `GET` | `/api/fikir/prayer/turkey` | `city` (Query: Şehir adı) | Günlük namaz vakitleri. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/fikir/prayer/turkey?city=istanbul) |
+| `GET` | `/api/fikir/calendar/today` | Yok | Anlık hicri tarih ve dini günler. | [Test Et](https://api.fikirogrencitoplulugu.org.tr/api/fikir/calendar/today) |
 
 ---
 
