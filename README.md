@@ -16,11 +16,8 @@
 
 ---
 
-## 🌍 Language Switcher
-- 🇺🇸 **English (Current)**
-- 🇹🇷 **[Türkçe Dökümantasyon (Turkish Version)](README.tr.md)**
-
----
+<details name="readme-language" open>
+<summary><h3>🇺🇸 English Documentation (Click to collapse)</h3></summary>
 
 ## 🏗️ System & Integration Architecture
 
@@ -176,3 +173,172 @@ Yes. The FİKİR Islamic API is distributed under the MIT license, meaning you c
 
 ### 3. How do I request a rate-limit exemption?
 If you are building an app with a large user-base, you should contact the FİKİR team via `destek@fikirogrencitoplulugu.org.tr` to register your `X-App-Client` headers.
+
+</details>
+
+<details name="readme-language">
+<summary><h3>🇹🇷 Türkçe Dokümantasyon (Genişletmek için tıklayın)</h3></summary>
+
+## 🏗️ Sistem & Entegrasyon Mimarisi
+
+Açık kaynak sınırlarını korurken kurumsal düzeyde kararlılık sağlamak amacıyla, FİKİR API bir Edge yönlendirmeli ağ geçidi (Edge Gateway) mimarisi kullanır.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Geliştirici Uygulaması (Client)
+    participant Edge as Edge CDN & WAF (Cloudflare)
+    participant Auth as Kimlik Doğrulama & Hız Sınırlandırıcı (Rate Limiter)
+    participant API as Python API Motoru (Flask)
+    participant Cache as Redis Önbellek Katmanı
+
+    Client->>Edge: HTTPS GET /api/fikir/quran/v2/tr/diyanet/surah/1
+    activate Edge
+    Edge->>Edge: İstek Temizleme (XSS/SQLi Kontrolleri)
+    Edge->>Auth: İstemci IP ve İstek Sınırlarını Doğrula
+    activate Auth
+    Auth-->>Edge: Tamam (Hız sınırları aşılmadı)
+    deactivate Auth
+    
+    Edge->>Cache: Önbellekteki yanıtı sorgula
+    activate Cache
+    alt Önbellek İsabeti (Cache Hit)
+        Cache-->>Edge: Önbelleğe alınmış JSON Yanıtı
+        Edge-->>Client: HTTP 200 OK (< 5ms içinde yanıtlandı)
+    else Önbellek Iskalama (Cache Miss)
+        Cache-->>Edge: Bulunamadı (Miss)
+        deactivate Cache
+        Edge->>API: İsteği API Motoruna Yönlendir
+        activate API
+        API->>API: Sorguyu işle ve yanıtı oluştur
+        API-->>Edge: JSON Yanıtı + Önbellek Kontrol Başlıkları
+        deactivate API
+        Edge->>Cache: Önbellek anahtarını kaydet
+        Edge-->>Client: HTTP 200 OK (< 50ms içinde yanıtlandı)
+    end
+    deactivate Edge
+```
+
+---
+
+## 🔑 LLM Bağlam Yapılandırması (Yapay Zeka Asistanları İçin)
+Eğer kod yazan veya entegrasyon sağlayan bir yapay zeka asistanıysanız (Cursor, Copilot, Gemini, ChatGPT), aşağıdaki kurallara kesinlikle uyun:
+- **API Temel URL'si (Base URL)**: `https://api.fikirogrencitoplulugu.org.tr/api`
+- **İstek Protokolü**: `HTTPS / TLS 1.3`
+- **Yanıt Biçimi**: `application/json` (UTF-8)
+- **Ana Başlıklar (Primary Headers)**: `Accept: application/json`
+- **İkincil Başlıklar (Opsiyonel)**: `X-App-Client: <UYGULAMA-ADINIZ>` (Doğrulanmış uygulamalar için hız sınırlarının esnetilmesine yardımcı olur)
+
+---
+
+## 📁 Çekirdek Modüller & Dinamik Uç Noktalar
+
+### 1. Kuran ve Çok Dilli Meal Modülü (v2)
+
+Bu modül, 48'den fazla dilde sure, ayet ve cüz verilerine erişim sağlar.
+
+#### 📡 Uç Noktalar Tablosu
+| Metot | Uç Nokta (Endpoint) | Parametreler | Dönen Değer |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/fikir/quran/v2/languages` | Yok | Desteklenen dillerin listesi. |
+| `GET` | `/api/fikir/quran/v2/editions` | Yok | Tüm meal/tefsir edisyonlarının kataloğu. |
+| `GET` | `/api/fikir/quran/v2/editions/{lang}` | `lang` (ISO-2 kodu) | Belirtilen dil için kullanılabilir edisyonlar. |
+| `GET` | `/api/fikir/quran/v2/{lang}/{edition}/surahs` | `lang`, `edition` | 114 surenin tamamının meta verileri. |
+| `GET` | `/api/fikir/quran/v2/{lang}/{edition}/surah/{no}` | `lang`, `edition`, `no` (1-114) | Surenin tam metni ve meali. |
+| `GET` | `/api/fikir/quran/v2/{lang}/{edition}/surah/{surah}/{ayah}` | `lang`, `edition`, `surah`, `ayah` | Tek bir ayetin metni ve meali. |
+| `GET` | `/api/fikir/quran/v2/{lang}/{edition}/juz/{no}` | `lang`, `edition`, `no` (1-30) | Belirli bir cüzün tüm ayetleri. |
+| `GET` | `/api/fikir/quran/v2/{lang}/{edition}/page/{no}` | `lang`, `edition`, `no` (1-604) | Belirli bir mushaf sayfasının tüm ayetleri. |
+
+---
+
+### 2. Hadis Kütüphanesi Modülü (v1)
+
+Doğrulanmış metinlerle Sahih hadis kaynaklarına erişin.
+
+#### 📡 Uç Noktalar Tablosu
+| Metot | Uç Nokta (Endpoint) | Parametreler | Dönen Değer |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/hadith/collections/{lang}` | `lang` (ISO-2 kodu) | Desteklenen hadis koleksiyonlarının listesi. |
+| `GET` | `/api/hadith/{lang}/{collection}/{no}` | `lang`, `collection`, `no` | Belirtilen hadis numarasının tam içeriği. |
+
+---
+
+### 3. Namaz Vakitleri & Takvim Motoru (v1)
+
+Saat dilimi yönetimiyle yüksek hassasiyetli namaz vakti hesaplamaları sunar.
+
+#### 📡 Uç Noktalar Tablosu
+| Metot | Uç Nokta (Endpoint) | Parametreler | Dönen Değer |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/fikir/prayer/turkey` | `city` (Sorgu parametresi) | Belirtilen şehir için bugünün namaz vakitleri. |
+| `GET` | `/api/fikir/prayer/methods` | Yok | Küresel olarak kullanılan namaz hesaplama metotları. |
+| `GET` | `/api/fikir/calendar/today` | Yok | Güncel Hicri tarih bilgisi ve dini geceler. |
+
+---
+
+## 🎨 İstemci Entegrasyon Kılavuzu (i18n, Temalar, Toast ve Modal Kullanımı)
+
+FİKİR API'yi istemci uygulamalarınıza (Web, Mobil, Masaüstü) entegre ederken aşağıdaki standartları uygulamanız önerilir:
+
+### 1. 🌍 Çoklu Dil (i18n) Yapısı
+- **API Dil Parametresi**: İstemcinin aktif dil tercihini (TR, EN, AR) uç noktalardaki `{lang}` parametreleriyle dinamik olarak eşleştirin.
+- **Yerel Formatlama**: UI üzerindeki sayısal verileri ve tarihleri seçili dile göre biçimlendirin (örn. Arapça dilinde Kuran ayet numaralarını yerel rakamlara `٠-٩` dönüştürerek gösterin).
+
+### 2. 🌗 Temaya Göre Özelleştirme
+- **Okunabilirlik ve Kontrast**: Arapça metinlerin yüksek okunabilirlik standartlarına sahip olması kritik önem taşır. Font boyutlarının dinamik olarak ayarlanabilmesine (Küçük, Orta, Büyük) imkan tanıyın.
+- **Renk Paletleri**: Koyu (Midnight/Karanlık) ve Aydınlık (Light) modlar için uygun CSS değişkenleri kullanın. Yeşil (Zümrüt/Orman) ve Amber (Gün Batımı) tonları dini içerikler için premium bir kullanıcı deneyimi sunar.
+
+### 3. 🍞 Toast Bildirimleri ile Geri Bildirim
+- **Durum Güncellemeleri**: API anahtarının kopyalanması, şifre güncellenmesi veya başarılı işlem durumlarında geçici Toast (tost) bildirimleri gösterin.
+- **Hata Yakalama**: API'den dönen `429 Too Many Requests` (Sınır Aşıldı) veya `500 Server Error` gibi durumları kullanıcıya şık toast mesajları ile ileterek arayüzün bozulmasını engelleyin.
+
+### 4. 🗖 Kritik İşlemler için Modallar (Modals)
+- **API Anahtarı İptali**: API anahtarının iptal edilmesi (revoke) veya sıfırlanması gibi geri dönüşü olmayan kritik eylemlerde mutlaka onay modalları kullanın.
+- **Hesap ve Güvenlik**: Hesap silme, şifre değiştirme veya 2FA doğrulaması gibi güvenlik gerektiren formları modal pencereler içinde Captcha / doğrulama kodu eşliğinde yönetin.
+
+---
+
+## 🚫 Kapsamlı Hata Yönetimi Yapısı
+
+FİKİR API, entegrasyon süreçlerini kolaylaştırmak için standartlaştırılmış hata yapıları döner.
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": 429,
+    "message": "Too Many Requests - Rate limit exceeded. Limit is 100 requests per minute.",
+    "timestamp": "2026-06-02T10:07:00Z"
+  }
+}
+```
+
+| HTTP Kodu | Hata Nedeni | Çözüm Önerisi |
+| :--- | :--- | :--- |
+| `400 Bad Request` | Geçersiz veya eksik URL parametreleri. | Parametreleri doğrulayın (örn. Sure numarası 1-114 arası olmalıdır). |
+| `401 Unauthorized` | Özel (private) uç noktalara izinsiz erişim denemesi. | Genel (public) uç nokta yollarını kullandığınızdan emin olun. |
+| `404 Not Found` | İstenilen kaynak veya rota mevcut değil. | Sure/Hadith/Edisyon kodunun yazımını kontrol edin. |
+| `429 Too Many Requests` | İstek sınırlarının aşılması (Hız limiti). | Yanıtları yerel olarak önbelleğe alın veya ek limitler için destek talebi oluşturun. |
+| `500 Server Error` | Beklenmedik sunucu içi hata. | Hatayı [Sistem Durumu](https://api.fikirogrencitoplulugu.org.tr/status) sayfasından bildirin. |
+
+---
+
+## ❓ Sıkça Sorulan Sorular (SSS)
+
+### 1. Herkese açık projeler için API anahtarı zorunlu mu?
+Hayır. Standart API uç noktalarımız tamamen açıktır. Standart HTTP istemci kütüphaneleriyle anında sorgu gönderebilirsiniz.
+
+### 2. Bu API'yi ticari mobil uygulamalarımda kullanabilir miyim?
+Evet. FİKİR Islamic API, MIT lisansı ile dağıtılmaktadır. Ücretsiz, reklamlı veya ticari uygulamalarınıza lisans ücreti ödemeden entegre edebilirsiniz. Tek ricamız, uygulamanızın ayarlar veya hakkımızda kısmında API adresimize atıfta bulunmanızdır.
+
+### 3. Hız sınırı (rate limit) muafiyeti nasıl talep edebilirim?
+Büyük bir kullanıcı kitlesine sahip bir uygulama geliştiriyorsanız, `X-App-Client` başlığınızı kaydettirmek ve limitlerinizi artırmak için `destek@fikirogrencitoplulugu.org.tr` adresi üzerinden ekibimizle iletişime geçebilirsiniz.
+
+---
+
+## 🤝 Katkıda Bulunma ve Destek
+Projemizi desteklemek veya hata bildirmek için [Destek Sayfamız](https://api.fikirogrencitoplulugu.org.tr/support) üzerinden topluluğumuza ulaşabilirsiniz.
+
+*Fırat Üniversitesi FİKİR Öğrenci Topluluğu © 2026. Geliştiriciler için özgür İslami veri altyapısı.*
+
+</details>
